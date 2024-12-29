@@ -1,0 +1,90 @@
+Write a modular Python code for a Telegram chatbot. The code should use python-telegram-bot for bot interactions, pymongo for MongoDB, and follow a clean, modular structure to ensure maintainability and extensibility. Sensitive information like API keys and database URIs should be managed using environment variables.
+
+Requirements:
+
+1. User Recognition: Automatically check if the user is new or existing:
+
+- If the user is new, create an entry in the Users collection in MongoDB with fields:
+-- user_id: Unique identifier for the user.
+-- name: User's name or username.
+-- last_seen: Timestamp of the last interaction.
+
+- For all users, create a new daily session in the Sessions collection with fields:
+-- session_id: Unique identifier for the session.
+-- user_id: Reference to the user's user_id.
+-- _score: Stores the user's happiness level for the day.
+-- _sad: Stores the user's concerns for the day.
+-- created_at: Timestamp of session creation.
+
+2. Daily Happiness Check: Send the user a daily message: "Hey, what is your happiness level today from 0 to 10?"
+
+Only accept numeric inputs between 0 and 10. Ignore and handle invalid responses gracefully.
+Save the validated response in the _score field of the current session.
+
+3. User Concerns: After receiving the happiness level, ask the user: "Is there anything that bothers you?"
+
+Save the user's response in the _sad field of the current session.
+
+4. ChatGPT Integration: Use the ChatGPT API to provide helpful advice based on the user's concerns:
+
+- Send the _sad response to ChatGPT with the system prompt: "Act like a coach. Provide useful advice to the current issue."
+- Save ChatGPT's response in the session and send it back to the user.
+
+5. Exercise Recommendation: Ask: "Hey, do you want a little exercise until tomorrow?" with two buttons: Yes and No.
+
+- If the user presses No:
+-- Reply: "Ok, fine, good luck, see you tomorrow!"
+- If the user presses Yes:
+-- Fetch a random exercise from the Excercise collection in MongoDB. This collection should store:
+--- excercise_id: Unique identifier for the exercise.
+--- excercise_text: Text of the exercise.
+--- tags: Array of associated tags (e.g., ["outside", "walking", "grateful"]).
+-- Send the selected exercise to the user.
+
+6. Answer Update: Implement a /update_answer command to allow users to restart the daily process for the current day:
+
+Restart by asking: "Hey, what is your happiness level today from 0 to 10?"
+
+7. Week Review: Every Sunday evening (21:00 UTC), send the user a summary of their weekly statistics:
+
+- Calculate the average mood score for the week by querying _score values from the Sessions collection for the past 7 days (including Saunday answer).
+- Query all _sad entries from the Sessions collection for the past 7 days and send them to ChatGPT with the following system prompt:
+-- "Please review the answers below. As a professional coach, what do you see in them? Is there any pattern? Provide a useful and insightful crisp summary."
+- Send the user a message with the following format:
+-- Average Score: [calculated average mood score]
+-- Concerns Summary: [summary from ChatGPT]
+- If no data is available for the past week, notify the user: "No data available for the week. Let's try again next week!"
+
+
+8. Database Schema: Use MongoDB with the following collections:
+
+- Users: A collection that stores user data. Example fields:
+-- user_id: string
+-- name: string
+-- last_seen: timestamp
+
+- Sessions: A collection that stores session data. Example fields:
+-- session_id: string
+-- user_id: string
+-- _score: integer
+-- _sad: string
+-- created_at: timestamp
+
+- Excercise: A collection that stores exercises. Example entries:
+-- {"excercise_id": 1, "excercise_text": "Take a 10-minute walk and think about one thing you're grateful for.", "tags": ["outside", "walking", "grateful"]}
+
+-- {"excercise_id": 2, "excercise_text": "Write down three things you achieved today, no matter how small.", "tags": ["lists", "small wins", "grateful"]}
+
+9. Error Handling: Implement robust error handling for the following scenarios:
+
+- Invalid user inputs (e.g., non-numeric values for happiness level).
+- MongoDB connection failures or data retrieval issues.
+- ChatGPT API errors or invalid responses.
+- Notify users gracefully in case of errors and ensure the bot continues functioning properly.
+
+10. Logging: Add logging for key events such as:
+
+- New user creation.
+- Daily session creation and updates.
+- Errors encountered during operations.
+- ChatGPT API interactions.
